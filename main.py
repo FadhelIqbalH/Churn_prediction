@@ -35,14 +35,16 @@ model = load_model()
 st.sidebar.header('Input Data Pelanggan')
 
 def user_input_features():
-    """Membuat widget input di sidebar dan mengembalikan DataFrame."""
+    """Membuat widget input di sidebar dan mengembalikan DataFrame dengan urutan kolom yang benar."""
     # Data Demografi
     gender = st.sidebar.selectbox('Jenis Kelamin', ('Male', 'Female'))
+    # SeniorCitizen 0 = No, 1 = Yes
+    senior_citizen = st.sidebar.selectbox('Merupakan Warga Senior (Senior Citizen)?', (0, 1)) 
     partner = st.sidebar.selectbox('Memiliki Partner?', ('Yes', 'No'))
     dependents = st.sidebar.selectbox('Memiliki Tanggungan?', ('Yes', 'No'))
-
+    
     # Data Akun
-    tenure = st.sidebar.slider('Lama Berlangganan (Bulan)', 1, 72, 12)
+    tenure = st.sidebar.slider('Lama Berlangganan (Bulan)', 0, 72, 12)
     contract = st.sidebar.selectbox('Jenis Kontrak', ('Month-to-month', 'One year', 'Two year'))
     paperless_billing = st.sidebar.selectbox('Tagihan Paperless?', ('Yes', 'No'))
     payment_method = st.sidebar.selectbox('Metode Pembayaran', ('Electronic check', 'Mailed check', 'Bank transfer (automatic)', 'Credit card (automatic)'))
@@ -51,42 +53,53 @@ def user_input_features():
 
     # Data Layanan Telepon
     phone_service = st.sidebar.selectbox('Layanan Telepon?', ('Yes', 'No'))
-    multiple_lines = st.sidebar.selectbox('Multiple Lines?', ('Yes', 'No', 'No phone service'))
+    multiple_lines = st.sidebar.selectbox('Multiple Lines?', ('No', 'Yes', 'No phone service'))
 
     # Data Layanan Internet
     internet_service = st.sidebar.selectbox('Layanan Internet', ('DSL', 'Fiber optic', 'No'))
-    online_security = st.sidebar.selectbox('Keamanan Online', ('Yes', 'No', 'No internet service'))
-    online_backup = st.sidebar.selectbox('Backup Online', ('Yes', 'No', 'No internet service'))
-    device_protection = st.sidebar.selectbox('Proteksi Perangkat', ('Yes', 'No', 'No internet service'))
-    tech_support = st.sidebar.selectbox('Dukungan Teknis', ('Yes', 'No', 'No internet service'))
-    streaming_tv = st.sidebar.selectbox('TV Streaming', ('Yes', 'No', 'No internet service'))
-    streaming_movies = st.sidebar.selectbox('Film Streaming', ('Yes', 'No', 'No internet service'))
+    online_security = st.sidebar.selectbox('Keamanan Online', ('No', 'Yes', 'No internet service'))
+    online_backup = st.sidebar.selectbox('Backup Online', ('No', 'Yes', 'No internet service'))
+    device_protection = st.sidebar.selectbox('Proteksi Perangkat', ('No', 'Yes', 'No internet service'))
+    tech_support = st.sidebar.selectbox('Dukungan Teknis', ('No', 'Yes', 'No internet service'))
+    streaming_tv = st.sidebar.selectbox('TV Streaming', ('No', 'Yes', 'No internet service'))
+    streaming_movies = st.sidebar.selectbox('Film Streaming', ('No', 'Yes', 'No internet service'))
 
     # Membuat dictionary dari input
     data = {
-        'gender': gender,
-        'Partner': partner,
-        'Dependents': dependents,
-        'tenure': tenure,
-        'PhoneService': phone_service,
-        'MultipleLines': multiple_lines,
-        'InternetService': internet_service,
-        'OnlineSecurity': online_security,
-        'OnlineBackup': online_backup,
-        'DeviceProtection': device_protection,
-        'TechSupport': tech_support,
-        'StreamingTV': streaming_tv,
-        'StreamingMovies': streaming_movies,
-        'Contract': contract,
-        'PaperlessBilling': paperless_billing,
-        'PaymentMethod': payment_method,
-        'MonthlyCharges': monthly_charges,
-        'TotalCharges': total_charges
+        'gender': [gender],
+        'SeniorCitizen': [senior_citizen],
+        'Partner': [partner],
+        'Dependents': [dependents],
+        'tenure': [tenure],
+        'PhoneService': [phone_service],
+        'MultipleLines': [multiple_lines],
+        'InternetService': [internet_service],
+        'OnlineSecurity': [online_security],
+        'OnlineBackup': [online_backup],
+        'DeviceProtection': [device_protection],
+        'TechSupport': [tech_support],
+        'StreamingTV': [streaming_tv],
+        'StreamingMovies': [streaming_movies],
+        'Contract': [contract],
+        'PaperlessBilling': [paperless_billing],
+        'PaymentMethod': [payment_method],
+        'MonthlyCharges': [monthly_charges],
+        'TotalCharges': [total_charges]
     }
     
     # Mengubah dictionary menjadi DataFrame
-    features = pd.DataFrame(data, index=[0])
-    return features
+    features = pd.DataFrame(data)
+    
+    # Memastikan urutan kolom sama persis dengan data latih
+    # Ini adalah daftar kolom dari notebook Anda (tanpa customerID dan Churn)
+    correct_order = [
+        'gender', 'SeniorCitizen', 'Partner', 'Dependents', 'tenure', 'PhoneService', 
+        'MultipleLines', 'InternetService', 'OnlineSecurity', 'OnlineBackup', 
+        'DeviceProtection', 'TechSupport', 'StreamingTV', 'StreamingMovies', 
+        'Contract', 'PaperlessBilling', 'PaymentMethod', 'MonthlyCharges', 'TotalCharges'
+    ]
+    
+    return features[correct_order]
 
 input_df = user_input_features()
 
@@ -102,16 +115,16 @@ st.markdown("---")
 
 # Menampilkan data input yang dimasukkan pengguna
 st.subheader('Data Pelanggan yang Dimasukkan:')
+# Menggunakan .T untuk transpose agar lebih mudah dibaca
 st.dataframe(input_df.T.rename(columns={0: 'Nilai'}))
 
 # Tombol Prediksi diletakkan di bawah data input di sidebar
 if st.sidebar.button('Prediksi'):
     if model is not None:
-        # Melakukan prediksi menggunakan pipeline yang sudah dimuat
+        # Melakukan prediksi
         prediction = model.predict(input_df)
         prediction_proba = model.predict_proba(input_df)
 
-        # Menampilkan hasil dengan tampilan yang lebih baik
         st.markdown("---")
         st.subheader('Hasil Prediksi Model')
 
@@ -120,7 +133,6 @@ if st.sidebar.button('Prediksi'):
         else:
             st.success('**✅ Pelanggan ini Kemungkinan Besar akan Tetap Bertahan**', icon="✅")
 
-        # Menampilkan probabilitas dalam bentuk kolom metrik
         col1, col2 = st.columns(2)
         with col1:
             st.metric(label="Probabilitas Bertahan", value=f"{prediction_proba[0][0]*100:.2f}%")
